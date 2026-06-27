@@ -3,8 +3,8 @@ from models.state_vector import StudentState
 
 class ReasoningEngine:
     """
-    Synthesizes the outputs of every AI module into
-    coherent reasoning that can be understood by users.
+    Generates evidence-based reasoning from the outputs
+    of all AI modules.
     """
 
     def generate_reasoning(
@@ -13,104 +13,122 @@ class ReasoningEngine:
         decisions,
     ):
 
+        if not decisions:
+            return [
+                "No academic tasks were provided."
+            ]
+
         reasoning = []
 
-        reasoning.append(
-            self._academic_summary(state)
+        reasoning.extend(
+            self._academic_reasoning(state)
+        )
+
+        reasoning.extend(
+            self._burnout_reasoning(state)
+        )
+
+        reasoning.extend(
+            self._decision_reasoning(decisions)
         )
 
         reasoning.append(
-            self._burnout_summary(state)
-        )
-
-        reasoning.append(
-            self._decision_summary(decisions)
-        )
-
-        reasoning.append(
-            self._overall_strategy(state)
+            self._overall_strategy(state, decisions)
         )
 
         return reasoning
 
-    # ------------------------------------
+    # --------------------------------------------------
 
-    def _academic_summary(
-        self,
-        state,
-    ):
+    def _academic_reasoning(self, state):
 
         prediction = state.academic_risk
 
-        return (
-            f"Academic risk is {prediction.level.lower()} "
-            f"(score={prediction.score:.2f}). "
-            f"The largest contributing factors are "
-            f"{prediction.top_factors[0].factor} and "
-            f"{prediction.top_factors[1].factor}."
-        )
+        lines = [
 
-    # ------------------------------------
+            f"Academic risk is {prediction.level} "
+            f"(score {prediction.score:.2f})."
 
-    def _burnout_summary(
-        self,
-        state,
-    ):
+        ]
+
+        for factor in prediction.top_factors:
+
+            lines.append(
+
+                f"{factor.factor} contributes "
+                f"{factor.contribution}% "
+                f"of academic risk."
+
+            )
+
+        return lines
+
+    # --------------------------------------------------
+
+    def _burnout_reasoning(self, state):
 
         prediction = state.burnout_risk
 
-        return (
-            f"Burnout risk is {prediction.level.lower()} "
-            f"(score={prediction.score:.2f}). "
-            f"The largest contributors are "
-            f"{prediction.top_factors[0].factor} and "
-            f"{prediction.top_factors[1].factor}."
-        )
+        lines = [
 
-    # ------------------------------------
+            f"Burnout risk is {prediction.level} "
+            f"(score {prediction.score:.2f})."
 
-    def _decision_summary(
+        ]
+
+        for factor in prediction.top_factors:
+
+            lines.append(
+
+                f"{factor.factor} contributes "
+                f"{factor.contribution}% "
+                f"of burnout risk."
+
+            )
+
+        return lines
+
+    # --------------------------------------------------
+
+    def _decision_reasoning(
         self,
         decisions,
     ):
 
-        highest = decisions[0]
+        top = decisions[0]
 
-        return (
-            f"The highest priority task is "
-            f"{highest.task['name']} because "
-            f"its recovery score "
-            f"({highest.priority_score:.2f}) "
-            f"is greater than all other tasks."
-        )
+        return [
 
-    # ------------------------------------
+            (
+                f"{top.task['name']} has the highest "
+                f"priority score "
+                f"({top.priority_score:.2f})."
+            ),
+
+            (
+                f"Policy Engine recommendation: "
+                f"{top.action} "
+                f"because {top.reason}"
+            ),
+
+        ]
+
+    # --------------------------------------------------
 
     def _overall_strategy(
         self,
         state,
+        decisions,
     ):
 
-        academic = state.academic_risk.score
-        burnout = state.burnout_risk.score
-
-        if academic > burnout:
-
-            return (
-                "The recovery strategy prioritizes "
-                "academic stabilization while "
-                "maintaining manageable workload."
-            )
-
-        if burnout > academic:
-
-            return (
-                "The recovery strategy prioritizes "
-                "burnout prevention while preserving "
-                "important academic progress."
-            )
+        top = decisions[0]
 
         return (
-            "The recovery strategy balances "
-            "academic recovery with wellness."
+
+            f"ARWA recommends completing "
+            f"{top.task['name']} first because it "
+            f"provides the greatest expected academic "
+            f"benefit while maintaining an appropriate "
+            f"balance with burnout risk."
+
         )
