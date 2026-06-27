@@ -2,7 +2,7 @@ from typing import Dict
 
 from models.agent_prediction import (
     AgentPrediction,
-    ContributingFactor
+    ContributingFactor,
 )
 
 
@@ -19,102 +19,238 @@ class AcademicRiskModel:
             "current_grade": 0.30,
             "deadline_density": 0.15,
             "estimated_workload": 0.15,
-            "average_difficulty": 0.10
+            "average_difficulty": 0.10,
         }
 
+    # --------------------------------------------------
+    # Normalization Functions
+    # --------------------------------------------------
+
     def normalize_grade(self, grade):
-        return max(0.0, min(1.0, (100 - grade) / 100))
+
+        return max(
+            0.0,
+            min(1.0, (100 - grade) / 100),
+        )
 
     def normalize_missing_tasks(self, missing_tasks):
-        return min(missing_tasks / 10, 1.0)
+
+        return min(
+            missing_tasks / 10,
+            1.0,
+        )
 
     def normalize_workload(self, workload):
-        return min(workload / 20, 1.0)
+
+        return min(
+            workload / 20,
+            1.0,
+        )
 
     def normalize_difficulty(self, difficulty):
+
         return difficulty / 10
 
     def normalize_deadline_density(self, density):
-        return min(density, 1.0)
+
+        return min(
+            density,
+            1.0,
+        )
+
+    # --------------------------------------------------
+    # Risk Classification
+    # --------------------------------------------------
 
     def classify_risk(self, score):
 
         if score >= 0.80:
             return "CRITICAL"
+
         if score >= 0.60:
             return "HIGH"
+
         if score >= 0.40:
             return "MEDIUM"
+
         return "LOW"
+
+    # --------------------------------------------------
+    # Confidence
+    # --------------------------------------------------
 
     def calculate_confidence(self, features):
 
-        completeness = sum(
+        available = sum(
             value is not None
             for value in features.values()
         )
 
-        return round(completeness / len(features), 2)
-
-    def predict(self, features: Dict):
-
-        grade = self.normalize_grade(features["current_grade"])
-        missing = self.normalize_missing_tasks(features["missing_tasks"])
-        workload = self.normalize_workload(features["estimated_workload"])
-        difficulty = self.normalize_difficulty(features["average_difficulty"])
-        density = self.normalize_deadline_density(features["deadline_density"])
-
-        risk_score = (
-            grade * self.weights["current_grade"]
-            + missing * self.weights["missing_tasks"]
-            + workload * self.weights["estimated_workload"]
-            + density * self.weights["deadline_density"]
-            + difficulty * self.weights["average_difficulty"]
+        return round(
+            available / len(features),
+            2,
         )
 
-        risk_level = self.classify_risk(risk_score)
-        confidence = self.calculate_confidence(features)
+    # --------------------------------------------------
+    # Prediction
+    # --------------------------------------------------
 
-        # -------------------------
-        # Explainability
-        # -------------------------
-        top_factors = [
-            ContributingFactor(
-                factor="Missing Assignments",
-                contribution=round(
-                    missing * self.weights["missing_tasks"] * 100,
-                    1
-                ),
-                explanation="Multiple missing assignments increase academic risk."
-            ),
-            ContributingFactor(
-                factor="Current Grade",
-                contribution=round(
-                    grade * self.weights["current_grade"] * 100,
-                    1
-                ),
-                explanation="Lower grades indicate a higher likelihood of academic decline."
-            ),
-            ContributingFactor(
-                factor="Workload",
-                contribution=round(
-                    workload * self.weights["estimated_workload"] * 100,
-                    1
-                ),
-                explanation="Heavy workload increases academic recovery difficulty."
+    def predict(
+        self,
+        features: Dict,
+    ):
+
+        grade = self.normalize_grade(
+            features["current_grade"]
+        )
+
+        missing = self.normalize_missing_tasks(
+            features["missing_tasks"]
+        )
+
+        workload = self.normalize_workload(
+            features["estimated_workload"]
+        )
+
+        difficulty = self.normalize_difficulty(
+            features["average_difficulty"]
+        )
+
+        density = self.normalize_deadline_density(
+            features["deadline_density"]
+        )
+
+        risk_score = (
+
+            grade * self.weights["current_grade"]
+
+            + missing * self.weights["missing_tasks"]
+
+            + workload * self.weights["estimated_workload"]
+
+            + density * self.weights["deadline_density"]
+
+            + difficulty * self.weights["average_difficulty"]
+
+        )
+
+        risk_level = self.classify_risk(
+            risk_score
+        )
+
+        confidence = self.calculate_confidence(
+            features
+        )
+
+        # --------------------------------------------------
+        # Dynamic Explainability
+         # --------------------------------------------------
+
+        raw_contributions = {
+
+            "Current Grade":
+                grade * self.weights["current_grade"],
+
+            "Missing Assignments":
+                missing * self.weights["missing_tasks"],
+
+            "Estimated Workload":
+                workload * self.weights["estimated_workload"],
+
+            "Deadline Density":
+                density * self.weights["deadline_density"],
+
+            "Average Difficulty":
+                difficulty * self.weights["average_difficulty"],
+
+        }
+
+        total = sum(raw_contributions.values())
+
+        explanations = {
+
+            "Current Grade":
+                "Lower grades increase academic risk.",
+
+            "Missing Assignments":
+                "Missing work strongly affects academic recovery.",
+
+            "Estimated Workload":
+                "Heavy workload makes recovery more difficult.",
+
+            "Deadline Density":
+                "Many nearby deadlines increase academic pressure.",
+
+            "Average Difficulty":
+                "More difficult assignments increase recovery effort.",
+
+        }
+
+        contributions = []
+
+        for factor, value in raw_contributions.items():
+
+            percentage = 0
+
+            if total > 0:
+
+                percentage = round(
+                    value / total * 100,
+                    1,
+                )
+
+            contributions.append(
+
+                ContributingFactor(
+
+                    factor=factor,
+
+                    contribution=percentage,
+
+                    explanation=explanations[factor],
+
+                )
+
             )
-        ]
+
+        top_factors = sorted(
+
+            contributions,
+
+            key=lambda x: x.contribution,
+
+            reverse=True,
+
+        )[:3]
 
         reasoning = [
+
             f"Overall academic risk classified as {risk_level}.",
-            "Risk is computed from normalized academic features.",
-            "Missing assignments and current grade are the strongest indicators."
+
+            "Risk is computed using normalized academic indicators.",
+
+            (
+                f"The largest contributors are "
+                f"{top_factors[0].factor}, "
+                f"{top_factors[1].factor}, "
+                f"and {top_factors[2].factor}."
+            ),
+
         ]
 
         return AgentPrediction(
-            score=round(risk_score, 2),
+
+            score=round(
+                risk_score,
+                2,
+            ),
+
             level=risk_level,
+
             confidence=confidence,
+
             top_factors=top_factors,
-            reasoning=reasoning
+
+            reasoning=reasoning,
+
         )
