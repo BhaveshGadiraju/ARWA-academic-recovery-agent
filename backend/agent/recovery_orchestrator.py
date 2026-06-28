@@ -1,109 +1,165 @@
-from agent.decision_engine import (
-    DecisionEngine,
-    Task,
-    StudentState
-)
+from agent.feature_extractor import FeatureExtractor
+from agent.decision_engine import DecisionEngine
+from agent.reasoning_engine import ReasoningEngine
+from agent.reflection_engine import ReflectionEngine
+from agent.planner import Planner
+from agent.explanation_engine import ExplanationEngine
+from agent.experience_memory import ExperienceMemory
+
+from models.academic_risk_model import AcademicRiskModel
+from models.burnout_risk_model import BurnoutRiskModel
+from models.state_vector import StudentState
 
 
 class RecoveryOrchestrator:
     """
-    Main AI agent responsible for coordinating
-    the academic recovery pipeline.
-
-    Pipeline:
-
-    Student Data
-        ↓
-    Build Student State
-        ↓
-    Decision Engine
-        ↓
-    Recovery Plan
+    Master AI agent responsible for coordinating
+    the complete academic recovery pipeline.
     """
 
     def __init__(self):
+
+        self.feature_extractor = FeatureExtractor()
+
+        self.academic_model = AcademicRiskModel()
+
+        self.burnout_model = BurnoutRiskModel()
+
         self.decision_engine = DecisionEngine()
 
-    def build_student_state(self, student_data):
-        """
-        Convert raw student data into the StudentState
-        used by the AI agent.
-        """
+        self.planner = Planner()
 
-        return StudentState(
-            academic_risk=student_data.get("academic_risk", 0.5),
-            burnout_risk=student_data.get("burnout_risk", 0.5),
-            available_time=student_data.get("available_time", 4.0)
+        self.reasoning_engine = ReasoningEngine()
+
+        self.reflection_engine = ReflectionEngine()
+
+        self.explanation_engine = ExplanationEngine()
+
+        self.memory = ExperienceMemory()
+
+    # --------------------------------------------------
+
+    def run(
+        self,
+        student_data,
+    ):
+
+        # ----------------------------------------------
+        # Phase 1
+        # Perception
+        # ----------------------------------------------
+
+        features = self.feature_extractor.extract(
+            student_data
         )
 
-    def build_tasks(self, student_data):
-        """
-        Convert raw dictionaries into Task objects.
-        """
+        # ----------------------------------------------
+        # Phase 2
+        # Prediction
+        # ----------------------------------------------
 
-        tasks = []
+        academic_prediction = self.academic_model.predict(
+            features
+        )
 
-        for item in student_data.get("tasks", []):
+        burnout_prediction = self.burnout_model.predict(
+            features
+        )
 
-            task = Task(
-                id=item["id"],
-                name=item["name"],
-                points_value=item["points_value"],
-                due_in_hours=item["due_in_hours"],
-                estimated_time=item["estimated_time"],
-                difficulty=item["difficulty"],
-                late_penalty=item["late_penalty"],
-                category=item["category"]
-            )
+        # ----------------------------------------------
+        # Phase 3
+        # State Construction
+        # ----------------------------------------------
 
-            tasks.append(task)
+        state = StudentState(
 
-        return tasks
+            tasks=student_data.tasks,
 
-    def generate_recovery_plan(self, decisions):
-        """
-        Convert AI decisions into a clean JSON response
-        for the frontend.
-        """
+            academic_risk=academic_prediction,
 
-        plan = []
+            burnout_risk=burnout_prediction,
 
-        for decision in decisions:
+        )
 
-            plan.append({
-                "task": decision.task.name,
-                "action": decision.action,
-                "priority_score": round(decision.priority_score, 2),
-                "reason": decision.reason,
-                "estimated_time": decision.task.estimated_time,
-                "due_in_hours": decision.task.due_in_hours
-            })
+        # ----------------------------------------------
+        # Phase 4
+        # Optimization
+        # ----------------------------------------------
 
-        return plan
+        decisions = self.decision_engine.optimize(
+            state
+        )
 
-    def run(self, student_data):
-        """
-        Main AI pipeline.
-        """
+        # ----------------------------------------------
+        # Phase 5
+        # Planning
+        # ----------------------------------------------
 
-        # Step 1
-        state = self.build_student_state(student_data)
+        plan = self.planner.generate(
+            decisions
+        )
 
-        # Step 2
-        tasks = self.build_tasks(student_data)
+        # ----------------------------------------------
+        # Phase 6
+        # Explainability
+        # ----------------------------------------------
 
-        # Step 3
-        decisions = self.decision_engine.optimize(tasks, state)
+        reasoning = self.reasoning_engine.generate_reasoning(
+            state,
+            decisions,
+        )
 
-        # Step 4
-        recovery_plan = self.generate_recovery_plan(decisions)
+        explanations = self.explanation_engine.generate(
+            decisions
+        )
+
+        # ----------------------------------------------
+        # Phase 7
+        # Reflection
+        # ----------------------------------------------
+
+        reflection = self.reflection_engine.reflect(
+            state,
+            decisions,
+        )
+
+        # ----------------------------------------------
+        # Phase 8
+        # Memory
+        # ----------------------------------------------
+
+        self.memory.store(
+
+            state=state,
+
+            decisions=decisions,
+
+            reflection=reflection,
+
+        )
+
+        # ----------------------------------------------
+        # Final Output
+        # ----------------------------------------------
 
         return {
-            "student_state": {
-                "academic_risk": state.academic_risk,
-                "burnout_risk": state.burnout_risk,
-                "available_time": state.available_time
-            },
-            "recovery_plan": recovery_plan
+
+            "features": features,
+
+            "academic_prediction": academic_prediction,
+
+            "burnout_prediction": burnout_prediction,
+
+            "state": state,
+
+            "decisions": decisions,
+
+            "plan": plan,
+
+            "reasoning": reasoning,
+
+            "explanations": explanations,
+
+            "reflection": reflection,
+
         }
-    
