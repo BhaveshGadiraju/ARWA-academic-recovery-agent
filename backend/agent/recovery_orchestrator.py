@@ -97,7 +97,7 @@ class RecoveryOrchestrator:
 
             burnout_prediction=burnout_prediction,
 
-            tasks=student_data.tasks,
+            tasks=student_data.get('tasks', []),
 
         )
 
@@ -114,7 +114,8 @@ class RecoveryOrchestrator:
         # ==================================================
 
         plan = self.planner.generate(
-            decisions
+            decisions,
+            state.available_time
         )
 
         # ==================================================
@@ -239,14 +240,16 @@ class RecoveryOrchestrator:
         # Phase 13 — Memory
         # ==================================================
 
+        # Store outcome metrics from the analysis
+        outcome_metrics = {
+            "recovery_score": recovery_score,
+            "reflection": reflection,
+        }
+
         self.memory.store(
-
             state=state,
-
-            decisions=decisions,
-
-            reflection=reflection,
-
+            plan=plan,
+            outcome_metrics=outcome_metrics,
         )
 
         # ==================================================

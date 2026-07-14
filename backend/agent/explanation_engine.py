@@ -67,3 +67,30 @@ class ExplanationEngine:
         )
 
         return "\n".join(lines)
+
+    # -------------------------
+    # DECISIONS EXPLANATION
+    # -------------------------
+    def generate(self, decisions):
+        """Generate explanations for a set of decisions."""
+        if not decisions:
+            return {"explanation": "No decisions to explain"}
+        
+        # If decisions is a list, explain each one
+        if isinstance(decisions, list):
+            explanations = []
+            for decision in decisions:
+                # Handle both dict and object formats
+                if hasattr(decision, 'task') and hasattr(decision, 'action'):
+                    explanations.append(self.explain_task_decision(decision))
+                elif isinstance(decision, dict):
+                    # For dict format, create a simple explanation
+                    explanations.append(f"Decision: {decision.get('action', 'N/A')}")
+            return {"explanations": explanations}
+        
+        # If decisions is a dict, treat it as a single decision container
+        if isinstance(decisions, dict):
+            return {"explanation": f"Strategy applied with {len(decisions.get('tasks', []))} tasks"}
+        
+        # Fallback
+        return {"explanation": "Decision process completed"}

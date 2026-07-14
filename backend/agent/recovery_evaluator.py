@@ -62,7 +62,7 @@ class RecoveryEvaluator:
     ):
 
         return sum(
-            t.points_value
+            t["points_value"]
             for t in tasks
         ) / 10
 
@@ -75,7 +75,7 @@ class RecoveryEvaluator:
     ):
 
         workload = sum(
-            t.estimated_time
+            t["estimated_time"]
             for t in tasks
         )
 
@@ -100,7 +100,7 @@ class RecoveryEvaluator:
     ):
 
         return sum(
-            t.estimated_time
+            t["estimated_time"]
             for t in tasks
         )
 
@@ -115,10 +115,10 @@ class RecoveryEvaluator:
 
         for task in tasks:
 
-            if task.due_in_hours <= 24:
+            if task["due_in_hours"] <= 24:
                 bonus += 2
 
-            elif task.due_in_hours <= 72:
+            elif task["due_in_hours"] <= 72:
                 bonus += 1
 
         return bonus

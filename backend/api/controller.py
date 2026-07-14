@@ -43,6 +43,7 @@ class RecoveryController:
                     asgn = assignment
 
                 task = {
+                    'name': asgn.get('title', f'Assignment {i}'),  # Add 'name' for planner
                     'title': asgn.get('title', f'Assignment {i}'),
                     'difficulty': asgn.get('difficulty', 0.5),
                     'estimated_time': asgn.get('estimated_hours', 3),
