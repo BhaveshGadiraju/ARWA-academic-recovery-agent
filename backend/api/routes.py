@@ -1,7 +1,10 @@
 from fastapi import APIRouter, HTTPException
+import logging
 
 from api.controller import RecoveryController
 from models.api_models import StudentRequest
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -43,12 +46,24 @@ def analyze(student: StudentRequest):
 
         return result
 
+    except KeyError as e:
+        logger.error(f"Missing required field in data: {e}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Missing required field: {str(e)}"
+        )
+    except ValueError as e:
+        logger.error(f"Invalid value in request: {e}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid value: {str(e)}"
+        )
     except Exception as e:
-
+        logger.error(f"Unexpected error in /analyze: {e}", exc_info=True)
         raise HTTPException(
 
             status_code=500,
 
-            detail=str(e),
+            detail=f"Analysis failed: {str(e)}",
 
         )
