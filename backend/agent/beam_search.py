@@ -129,19 +129,19 @@ class BeamSearchPlanner:
 
         return (
 
-            task.points_value * 3
+            task["points_value"] * 3
 
             + max(
 
                 0,
 
-                72 - task.due_in_hours,
+                72 - task["due_in_hours"],
 
             )
 
-            - task.difficulty * 2
+            - task["difficulty"] * 2
 
-            - task.estimated_time
+            - task["estimated_time"]
 
         )
 
@@ -159,7 +159,7 @@ class BeamSearchPlanner:
 
         total = sum(
 
-            t.estimated_time
+            t["estimated_time"]
 
             for t in tasks
 
