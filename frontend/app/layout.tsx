@@ -1,55 +1,27 @@
-import { Analytics } from '@vercel/analytics/next'
-import type { Metadata, Viewport } from 'next'
-import { AuthProvider } from '@/contexts/AuthContext'
-import { ThemeProvider } from '@/contexts/ThemeContext'
-import './globals.css'
+import type { Metadata, Viewport } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
+import { AuthProvider } from '@/contexts/AuthContext';
+
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
 
 export const metadata: Metadata = {
-  title: 'ARWA - Academic Recovery & Wellness Assistant',
-  description: 'AI-powered academic recovery and wellness guidance for students',
-  generator: 'v0.app',
-  icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
-  },
-}
+  title: 'ARWA · Recover your semester',
+  description: 'ARWA turns your courses, deadlines, and study time into a clear daily recovery plan.',
+};
 
 export const viewport: Viewport = {
-  colorScheme: 'light dark',
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: 'white' },
-    { media: '(prefers-color-scheme: dark)', color: 'black' },
-  ],
-}
+  themeColor: '#f7f3ec',
+  width: 'device-width',
+  initialScale: 1,
+};
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className="antialiased">
-        <ThemeProvider>
-          <AuthProvider>
-            {children}
-            {process.env.NODE_ENV === 'production' && <Analytics />}
-          </AuthProvider>
-        </ThemeProvider>
+    <html lang="en" className={inter.variable}>
+      <body className="min-h-screen font-sans antialiased">
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
-  )
+  );
 }

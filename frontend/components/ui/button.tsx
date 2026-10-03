@@ -1,58 +1,68 @@
-import { Button as ButtonPrimitive } from '@base-ui/react/button'
-import { cva, type VariantProps } from 'class-variance-authority'
+import Link from 'next/link';
+import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
-import { cn } from '@/lib/utils'
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
+type Size = 'sm' | 'md' | 'lg';
 
-const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all duration-200 outline-none select-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-  {
-    variants: {
-      variant: {
-        default: 'bg-primary text-primary-foreground shadow-md hover:shadow-lg hover:bg-primary/95 active:scale-95 active:shadow-sm',
-        outline:
-          'border-border/50 bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground hover:shadow-sm transition-shadow dark:border-input dark:bg-input/30 dark:hover:bg-input/50',
-        secondary:
-          'bg-secondary text-secondary-foreground hover:bg-secondary/80 active:scale-95 shadow-sm hover:shadow-md transition-shadow',
-        ghost:
-          'hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground transition-colors dark:hover:bg-muted/50',
-        destructive:
-          'bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40 active:scale-95',
-        link: 'text-primary underline-offset-4 hover:underline',
-      },
-      size: {
-        default:
-          'h-9 gap-2 px-4 rounded-full has-data-[icon=inline-end]:pr-3.5 has-data-[icon=inline-start]:pl-3.5',
-        xs: "h-7 gap-1.5 rounded-full px-3 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-8 gap-1.5 rounded-full px-3.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5 [&_svg:not([class*='size-'])]:size-3.5",
-        lg: 'h-11 gap-2 px-6 rounded-full has-data-[icon=inline-end]:pr-5 has-data-[icon=inline-start]:pl-5',
-        icon: 'size-9 rounded-full',
-        'icon-xs':
-          "size-7 rounded-full in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
-        'icon-sm':
-          'size-8 rounded-full in-data-[slot=button-group]:rounded-lg',
-        'icon-lg': 'size-10 rounded-full',
-      },
-    },
-    defaultVariants: {
-      variant: 'default',
-      size: 'default',
-    },
-  },
-)
+const VARIANTS: Record<Variant, string> = {
+  primary: 'bg-ink text-surface hover:bg-ink-soft',
+  secondary: 'border border-line-strong bg-surface text-ink hover:bg-sunken',
+  ghost: 'text-muted hover:bg-sunken hover:text-ink',
+  danger: 'border border-bad/30 bg-surface text-bad hover:bg-bad-soft',
+};
 
-function Button({
-  className,
-  variant = 'default',
-  size = 'default',
-  ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
-  return (
-    <ButtonPrimitive
-      data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
-      {...props}
-    />
-  )
+const SIZES: Record<Size, string> = {
+  sm: 'h-8 px-3 text-[13px]',
+  md: 'h-10 px-4 text-sm',
+  lg: 'h-12 px-6 text-[15px]',
+};
+
+export function buttonClass(variant: Variant = 'primary', size: Size = 'md', className = ''): string {
+  return [
+    'inline-flex items-center justify-center gap-2 rounded-full font-medium transition-colors',
+    'disabled:cursor-not-allowed disabled:opacity-50',
+    VARIANTS[variant],
+    SIZES[size],
+    className,
+  ].join(' ');
 }
 
-export { Button, buttonVariants }
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: Variant;
+  size?: Size;
+  loading?: boolean;
+}
+
+export function Button({ variant, size, loading, className, children, disabled, type = 'button', ...rest }: ButtonProps) {
+  return (
+    <button type={type} className={buttonClass(variant, size, className)} disabled={disabled || loading} {...rest}>
+      {loading && <Spinner />}
+      {children}
+    </button>
+  );
+}
+
+interface ButtonLinkProps {
+  href: string;
+  variant?: Variant;
+  size?: Size;
+  className?: string;
+  children: ReactNode;
+}
+
+export function ButtonLink({ href, variant, size, className, children }: ButtonLinkProps) {
+  return (
+    <Link href={href} className={buttonClass(variant, size, className)}>
+      {children}
+    </Link>
+  );
+}
+
+export function Spinner({ className = 'h-4 w-4' }: { className?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={`inline-block animate-spin rounded-full border-2 border-current border-r-transparent ${className}`}
+    />
+  );
+}
